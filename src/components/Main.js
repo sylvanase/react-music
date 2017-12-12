@@ -6,7 +6,7 @@ import Player from '../page/player'
 import Header from 'components/header'
 import {MUSIC_LIST} from '../api/musiclist'
 import MusicList from '../page/musiclist'
-// import {Router, IndexRoute, Route, Link, hashHistory} from 'react-router'
+import {BrowserRouter as Router, Route, Link, IndexRouter} from 'react-router-dom';
 
 
 class App extends React.Component {
@@ -32,20 +32,26 @@ class App extends React.Component {
   }
 
   render() {
+    const Home = () => ( // react-router 4.0 的用法有很大变化，搞死了要……
+      <Player currentMusicItem={this.state.currentMusicItem}/>
+    );
+    const List = () => (
+      <MusicList
+        currentMusicItem={this.state.currentMusicItem}
+        musicList={this.state.musicList}
+      />
+    );
     return (
-      <div>
-        <Header/>
-      </div>
+      <Router>
+        <div>
+          <Header/>
+          <Route exact path="/" component={Home}/>
+          <Route path="/list" component={List}/>
+        </div>
+      </Router>
+
     );
   }
 }
 
-class Root extends React.Component {
-  render() {
-    return (
-      <App/>
-    );
-  }
-}
-
-export default Root;
+export default App;
