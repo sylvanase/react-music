@@ -2,6 +2,7 @@ import React from 'react';
 import Progress from 'components/progress'
 import 'styles/player.scss'
 import {Link} from 'react-router-dom'
+import Pubsub from 'pubsub-js'
 
 let duration = null;
 
@@ -11,7 +12,8 @@ class Player extends React.Component {
     this.state = {
       progress: '0',
       volume: '0',
-      isPlay: true // 播放状态
+      isPlay: true, // 播放状态
+      leftTime: '' // 播放的剩余时间
     };
   }
 
@@ -20,7 +22,8 @@ class Player extends React.Component {
       duration = e.jPlayer.status.duration;
       this.setState({
         volume: e.jPlayer.options.volume * 100,
-        progress: e.jPlayer.status.currentPercentAbsolute
+        progress: e.jPlayer.status.currentPercentAbsolute,
+        leftTime: this.formatTime(duration * (1 - e.jPlayer.status.currentPercentAbsolute / 100))
       })
     })
   }
@@ -48,16 +51,33 @@ class Player extends React.Component {
     })
   }
 
+  playPrev() {
+    Pubsub.publish('PLAY_PREV');
+  }
+
+  playNext() {
+    Pubsub.publish('PLAY_NEXT');
+  }
+
+  formatTime(time) {
+    time = Math.floor(time);
+    let miniutes = Math.floor(time / 60);
+    let seconds = Math.floor(time % 60);
+    seconds = seconds < 10 ? `0${seconds}` : seconds;
+    return `${miniutes}:${seconds}`;
+  }
+
   render() {
     return (
       <div>
         <div className="player-page">
-          <h1 className='caption'><Link to='/list'>我的私人音乐坊</Link></h1>
+          <h1 className='caption'><Link to='/list' className='caption'>我的歌单</Link></h1>
           <div className="mt20 row">
             <div className="controll-wrapper">
               <h2 className="music-title">{this.props.currentMusicItem.title}</h2>
               <h3 className="music-artist mt10">{this.props.currentMusicItem.artist}</h3>
               <div className="row mt20">
+                <div className="left-time -col-auto">-{this.state.leftTime}</div>
                 <div className="volume-container">
                   <i className="icon-volume rt" style={{top: 5, left: -5}}></i>
                   <div className="volume-wrapper">
@@ -74,25 +94,18 @@ class Player extends React.Component {
                 </div>*/}
               </div>
               <div className="mt35 row">
-                {/*<div>
-                  <i className="icon prev" onClick={this.playPrev.bind(this)}></i>
-                  <i
-                    className={`icon ml20 ${Math.ceil(this.state.time) >= Math.ceil(duration) ? 'play' : this.state.isPlay ? 'pause' : 'play'}`}
-                    onClick={this.play.bind(this)}></i>
-                  <i className="icon next ml20" onClick={this.playNext.bind(this)}></i>
+                <div>
+                  <i className="icon prev" onClick={this.playPrev}></i>
+                  <i className={`icon ml20 ${this.state.isPlay ? 'pause' : 'play'}`} onClick={this.play.bind(this)}></i>
+                  <i className="icon ml20 next" onClick={this.playNext}></i>
                 </div>
                 <div className="-col-auto">
                   <i className="icon repeat-cycle"></i>
-                </div>*/}
-                <div>
-                  <i className="icon prev"></i>
-                  <i className={`icon ml20 ${this.state.isPlay ? 'pause' : 'play'}`} onClick={this.play.bind(this)}></i>
-                  <i className="icon ml20 next"></i>
                 </div>
               </div>
             </div>
             <div className='-col-auto cover'>
-              <img src={this.props.currentMusicItem.cover} alt={this.props.currentMusicItem.title}/>
+              <img className={`${this.state.isPlay ? '' : 'pause'}`} src={this.props.currentMusicItem.cover} alt={this.props.currentMusicItem.title}/>
               {/*<img
                 className={`${Math.ceil(this.state.time) >= Math.ceil(duration) ? 'pause' : this.state.isPlay ? '' : 'pause'}`}
                 src={this.props.currentMusicItem.cover} alt={this.props.currentMusicItem.title}/>*/}

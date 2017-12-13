@@ -7,7 +7,7 @@ import Header from 'components/header'
 import {MUSIC_LIST} from '../api/musiclist'
 import MusicList from '../page/musiclist'
 import {BrowserRouter as Router, Route, Link, IndexRouter} from 'react-router-dom';
-
+import Pubsub from 'pubsub-js'
 
 class App extends React.Component {
   constructor() {
@@ -18,17 +18,68 @@ class App extends React.Component {
     }
   }
 
+  playMusic(musicItem) {
+    $('#player').jPlayer('setMedia', {
+      mp3: musicItem.file
+    }).jPlayer('play');
+    this.setState({
+      currentMusicItem: musicItem
+    })
+  }
+
+  playNext(type = 'next') {
+    let index = this.findMusicItemIndex(this.state.currentMusicItem);
+    let newIndex = null;
+    let musicListLength = this.state.musicList.length;
+    if (type == 'next') { // 使用取余的方式来获取下一曲播放的index，减少if - else 的判断
+      newIndex = (index + 1) % musicListLength;
+    } else {
+      newIndex = (index - 1 + musicListLength) % musicListLength;
+    }
+    this.playMusic(this.state.musicList[newIndex]);
+  }
+
+  findMusicItemIndex(musicItem) { // 获取当前播放的音乐的索引
+    return this.state.musicList.indexOf(musicItem)
+  }
+
   componentDidMount() {
-    $('#player').jPlayer({
-      ready: function () {
-        $(this).jPlayer('setMedia', {
-          mp3: 'http://dl.stream.qqmusic.qq.com/C400004Mi9M64GwUus.m4a?vkey=14439CA3093DD4EA1BD4C411C8E73EBCD1DAC5D1396043D7431430DDA305DBF7EEA88E4D1063AA07D25A7753F7108040CFD13042FB5D1D8D&guid=1027035895&uin=0&fromtag=66'
-        }).jPlayer('play')
-      },
+    $('#player').jPlayer({ // 初始化jplayer
       supplied: 'mp3',
       wmode: 'window'
+    });
+
+    this.playMusic(this.state.currentMusicItem);
+
+    $('#player').bind($.jPlayer.event.ended, (e) => { // 监听一曲播放完成后继续下一首
+      this.playNext();
     })
 
+    Pubsub.subscribe('PLAY_MUSIC', (msg, musicItem) => {
+      this.playMusic(musicItem)
+    })
+    Pubsub.subscribe('DELETE_MUSIC', (msg, musicItem) => {
+      this.setState({
+        musicList: this.state.musicList.filter(item => {
+          return item !== musicItem;
+        })
+      })
+    })
+
+    Pubsub.subscribe('PLAY_NEXT', (e) => {
+      this.playNext()
+    })
+    Pubsub.subscribe('PLAY_PREV', (e) => {
+      this.playNext('prev')
+    })
+  }
+
+  componentWillUnmount() {
+    Pubsub.unsubscribe('PLAY_MUSIC')
+    Pubsub.unsubscribe('DELETE_MUSIC')
+    Pubsub.unsubscribe('PLAY_PREV')
+    Pubsub.unsubscribe('PLAY_NEXT')
+    $('#player').unbind($.jPlayer.event.ended)
   }
 
   render() {
