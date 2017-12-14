@@ -67,6 +67,11 @@ class Player extends React.Component {
     return `${miniutes}:${seconds}`;
   }
 
+  changeRepeat(){
+    Pubsub.publish('REPEAT_TYPE');
+  }
+
+
   render() {
     return (
       <div>
@@ -87,11 +92,6 @@ class Player extends React.Component {
               </div>
               <div className="row mt20" style={{height: 10, lineHeight: '10px'}}>
                 <Progress progress={this.state.progress} onProgressChange={this.progressChangeHandler}></Progress>
-                {/*<div
-                  className="left-time -col-auto">{(this.state.time / 60).toFixed(0) > 10 ? 10 : '0' + (this.state.time / 60).toFixed(0)}
-                  : {((this.state.time).toFixed(0) % 60 < 10) ? '0' + (this.state.time).toFixed(0) % 60 : (this.state.time).toFixed(0) % 60}
-                  s
-                </div>*/}
               </div>
               <div className="mt35 row">
                 <div>
@@ -100,15 +100,13 @@ class Player extends React.Component {
                   <i className="icon ml20 next" onClick={this.playNext}></i>
                 </div>
                 <div className="-col-auto">
-                  <i className="icon repeat-cycle"></i>
+                  <i className={`icon repeat-${this.props.repeatType}`} onClick={this.changeRepeat.bind(this)}></i>
                 </div>
               </div>
             </div>
             <div className='-col-auto cover'>
-              <img className={`${this.state.isPlay ? '' : 'pause'}`} src={this.props.currentMusicItem.cover} alt={this.props.currentMusicItem.title}/>
-              {/*<img
-                className={`${Math.ceil(this.state.time) >= Math.ceil(duration) ? 'pause' : this.state.isPlay ? '' : 'pause'}`}
-                src={this.props.currentMusicItem.cover} alt={this.props.currentMusicItem.title}/>*/}
+              <img className={`${this.state.isPlay ? '' : 'pause'}`} src={this.props.currentMusicItem.cover}
+                   alt={this.props.currentMusicItem.title}/>
             </div>
           </div>
         </div>

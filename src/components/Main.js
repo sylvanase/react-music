@@ -9,12 +9,15 @@ import MusicList from '../page/musiclist'
 import {BrowserRouter as Router, Route, Link, IndexRouter} from 'react-router-dom';
 import Pubsub from 'pubsub-js'
 
+let repeatTypeList = ['cycle', 'random', 'once'];
+
 class App extends React.Component {
   constructor() {
     super();
     this.state = {
       musicList: MUSIC_LIST,
-      currentMusicItem: MUSIC_LIST[0]
+      currentMusicItem: MUSIC_LIST[0],
+      repeatType: repeatTypeList[0] // 歌曲的循环模式，默认歌单循环
     }
   }
 
@@ -43,6 +46,27 @@ class App extends React.Component {
     return this.state.musicList.indexOf(musicItem)
   }
 
+  changeRepeat() {
+    let repeatType = this.state.repeatType;
+    if (repeatType == 'cycle') {
+      this.playNext();
+    } else if (repeatType == 'once') { // 继续播放当前歌曲
+      this.playMusic(this.state.currentMusicItem);
+    } else { // 随机播放
+      let randomIndex = this.randomIndex();
+      this.playMusic(this.state.musicList[randomIndex]);
+    }
+  }
+
+  randomIndex() {
+    let index = this.findMusicItemIndex(this.state.currentMusicItem);
+    let newIndex = parseInt(Math.random() * this.state.musicList.length);
+    while (index == newIndex) {
+      newIndex = parseInt(Math.random() * this.state.musicList.length)
+    }
+    return newIndex;
+  }
+
   componentDidMount() {
     $('#player').jPlayer({ // 初始化jplayer
       supplied: 'mp3',
@@ -52,7 +76,7 @@ class App extends React.Component {
     this.playMusic(this.state.currentMusicItem);
 
     $('#player').bind($.jPlayer.event.ended, (e) => { // 监听一曲播放完成后继续下一首
-      this.playNext();
+      this.changeRepeat();
     })
 
     Pubsub.subscribe('PLAY_MUSIC', (msg, musicItem) => {
@@ -66,11 +90,20 @@ class App extends React.Component {
       })
     })
 
-    Pubsub.subscribe('PLAY_NEXT', (e) => {
+    Pubsub.subscribe('PLAY_NEXT', () => {
       this.playNext()
     })
-    Pubsub.subscribe('PLAY_PREV', (e) => {
+
+    Pubsub.subscribe('PLAY_PREV', () => {
       this.playNext('prev')
+    })
+
+    Pubsub.subscribe('REPEAT_TYPE', () => {
+      let index = repeatTypeList.indexOf(this.state.repeatType),
+        newIndex = (index + 1) % repeatTypeList.length;
+      this.setState({
+        repeatType: repeatTypeList[newIndex]
+      })
     })
   }
 
@@ -84,7 +117,7 @@ class App extends React.Component {
 
   render() {
     const Home = () => ( // react-router 4.0 的用法有很大变化，搞死了要……
-      <Player currentMusicItem={this.state.currentMusicItem}/>
+      <Player currentMusicItem={this.state.currentMusicItem} repeatType={this.state.repeatType}/>
     );
     const List = () => (
       <MusicList
